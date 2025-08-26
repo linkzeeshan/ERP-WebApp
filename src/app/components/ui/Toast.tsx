@@ -61,7 +61,7 @@ export default function Toast({ message, type, duration = 3000, onClose }: Toast
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-fade-in-up">
+    <div className="fixed bottom-4 right-4 z-50">
       <div className={`flex items-center p-4 rounded-lg border ${bgColor} shadow-lg max-w-md`}>
         <div className={`flex-shrink-0 ${iconColor}`}>
           {icon}
