@@ -31,8 +31,8 @@ function SubmitButton({ pending }: { pending: boolean }) {
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin");
+  const [username, setUsername] = useState("ceo");
+  const [password, setPassword] = useState("sunflagdemo");
   const [isFormValid, setIsFormValid] = useState(true);
   const [shake, setShake] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);

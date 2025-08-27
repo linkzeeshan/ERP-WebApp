@@ -13,7 +13,7 @@ export async function handleLogin(formData: FormData) {
 
   // Simple authentication logic
   // In a real application, you would validate against a database
-  if (username === "sfadmin" && password === "sunflagdemo") {
+  if (username === "ceo" && password === "sunflagdemo") {
     // In a real app, you would set session/cookies here
     // For now, just redirect to the data analytics dashboard
     redirect("/real-analysis");

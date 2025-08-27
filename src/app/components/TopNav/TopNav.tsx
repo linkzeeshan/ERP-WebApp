@@ -289,8 +289,8 @@ export default function TopNav() {
                           U
                         </div>
                         <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">User Name</p>
-                          <p className="text-xs text-gray-500">Production Deparfdsfdsfsdtment</p>
+                          <p className="text-sm font-medium text-gray-900">CEO</p>
+                          <p className="text-xs text-gray-500">Sunflag Thailand</p>
                         </div>
                       </div>
                     </div>
