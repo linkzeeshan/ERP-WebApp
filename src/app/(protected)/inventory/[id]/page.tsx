@@ -46,8 +46,9 @@ const batchHistory = [
   },
 ];
 
-export default function InventoryItemPage({ params }: { params: { id: string } }) {
-  const item = getInventoryItem(params.id);
+export default async function InventoryItemPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const item = getInventoryItem(id);
 
   return (
     <div className="p-6">

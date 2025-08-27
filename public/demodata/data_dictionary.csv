@@ -1,0 +1,11 @@
+File_Name,Columns,Notes
+calendar_months,Month,YYYY-MM list covering Jan 2016 – Dec 2025
+market_demand,"Month, Product_ID, Product_Name, Type, Market_Demand_MT",Synthetic market demand with trend+seasonality
+product_prices,"Month, Product_ID, Avg_Selling_Price_USD_per_MT",Avg selling price per product per month
+production_actual,"Month, Product_ID, Actual_Production_MT",Realized production
+sales_realized,"Month, Product_ID, Sales_MT, Avg_Selling_Price_USD_per_MT, Revenue_USD",Monthly sales and revenue
+fg_inventory_flows,"Month, Product_ID, Opening_Stock_MT, Produced_MT, Sales_MT, Closing_Stock_MT",Inventory movements
+demand_forecast,"Month, Product_ID, Demand_Forecast_MT",In-month forecast using 12-mo MA + seasonal index
+fg_inventory_plus_forecast,fg_inventory_flows + Demand_Forecast_MT + Avg_Selling_Price_USD_per_MT,Merged convenience table
+raw_material_consumption,"Month, Material_ID, Material_Name, Unit, Consumption_Qty",RM usage derived from production
+raw_material_purchases,"Month, Material_ID, Material_Name, Unit, Purchase_Qty, Lead_Time_Days",Purchasing policy with lead time

@@ -1,211 +1,532 @@
-import Link from "next/link";
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area } from 'recharts';
+import { EnergyMeter, DigitalMeter, EquipmentStatus } from '../../../components/ui/EnergyMeters';
+import QuickActions, { commonActions } from '../../../components/ui/QuickActions';
 
 export default function EnergyMonitoringPage() {
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Energy Monitoring</h1>
-        <div className="flex gap-4">
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-            Download Report
+  const [timeRange, setTimeRange] = useState('hour');
+  const [selectedEquipment, setSelectedEquipment] = useState('all');
+  const [isLiveData, setIsLiveData] = useState(false);
+
+  // Mock real-time data with different time ranges
+  const [currentData, setCurrentData] = useState({
+    totalPower: 1245.67,
+    peakPower: 1560.0,
+    averagePower: 1180.0,
+    powerFactor: 0.92,
+    carbonFootprint: 456.78,
+    costPerHour: 89.45
+  });
+
+  // Mock equipment data
+  const equipmentData: Array<{
+    name: string;
+    status: 'online' | 'offline' | 'maintenance' | 'warning';
+    efficiency: number;
+    power: number;
+    temperature: number;
+  }> = [
+    { name: 'Compressor A', status: 'online', efficiency: 78, power: 245, temperature: 65 },
+    { name: 'Boiler System', status: 'online', efficiency: 92, power: 180, temperature: 85 },
+    { name: 'Production Line A', status: 'online', efficiency: 85, power: 320, temperature: 45 },
+    { name: 'Production Line B', status: 'warning', efficiency: 72, power: 310, temperature: 52 },
+    { name: 'Chiller System', status: 'maintenance', efficiency: 65, power: 190, temperature: 75 },
+    { name: 'HVAC System', status: 'online', efficiency: 88, power: 150, temperature: 35 }
+  ];
+
+  // Mock chart data for different time ranges
+  const getConsumptionData = (range: string) => {
+    switch (range) {
+      case 'hour':
+        return [
+          { time: '00:00', power: 980, cost: 45.2 },
+          { time: '10:00', power: 850, cost: 39.1 },
+          { time: '20:00', power: 1450, cost: 66.8 },
+          { time: '30:00', power: 1560, cost: 71.8 },
+          { time: '40:00', power: 1380, cost: 63.5 },
+          { time: '50:00', power: 1100, cost: 50.6 },
+          { time: '60:00', power: 920, cost: 42.3 }
+        ];
+      case 'day':
+        return [
+          { time: '00:00', power: 850, cost: 39.1 },
+          { time: '04:00', power: 720, cost: 33.1 },
+          { time: '08:00', power: 1450, cost: 66.8 },
+          { time: '12:00', power: 1560, cost: 71.8 },
+          { time: '16:00', power: 1380, cost: 63.5 },
+          { time: '20:00', power: 1100, cost: 50.6 },
+          { time: '24:00', power: 920, cost: 42.3 }
+        ];
+      case 'week':
+        return [
+          { time: 'Mon', power: 1250, cost: 57.5 },
+          { time: 'Tue', power: 1320, cost: 60.7 },
+          { time: 'Wed', power: 1180, cost: 54.3 },
+          { time: 'Thu', power: 1450, cost: 66.8 },
+          { time: 'Fri', power: 1380, cost: 63.5 },
+          { time: 'Sat', power: 980, cost: 45.2 },
+          { time: 'Sun', power: 850, cost: 39.1 }
+        ];
+      case 'month':
+        return [
+          { time: 'Week 1', power: 1250, cost: 57.5 },
+          { time: 'Week 2', power: 1320, cost: 60.7 },
+          { time: 'Week 3', power: 1180, cost: 54.3 },
+          { time: 'Week 4', power: 1450, cost: 66.8 }
+        ];
+      default:
+        return [
+          { time: '00:00', power: 980, cost: 45.2 },
+          { time: '04:00', power: 850, cost: 39.1 },
+          { time: '08:00', power: 1450, cost: 66.8 },
+          { time: '12:00', power: 1560, cost: 71.8 },
+          { time: '16:00', power: 1380, cost: 63.5 },
+          { time: '20:00', power: 1100, cost: 50.6 },
+          { time: '24:00', power: 920, cost: 42.3 }
+        ];
+    }
+  };
+
+  // Get data based on time range
+  const consumptionData = getConsumptionData(timeRange);
+
+  const distributionData = [
+    { name: 'Production Lines', value: 45, color: '#3b82f6' },
+    { name: 'HVAC Systems', value: 25, color: '#10b981' },
+    { name: 'Compressors', value: 20, color: '#f59e0b' },
+    { name: 'Lighting', value: 10, color: '#8b5cf6' }
+  ];
+
+  // Update data based on time range
+  useEffect(() => {
+    const getDataForRange = (range: string) => {
+      const baseData = {
+        totalPower: 1245.67,
+        peakPower: 1560.0,
+        averagePower: 1180.0,
+        powerFactor: 0.92,
+        carbonFootprint: 456.78,
+        costPerHour: 89.45
+      };
+
+      switch (range) {
+        case 'hour':
+          return {
+            ...baseData,
+            totalPower: 1245.67,
+            peakPower: 1560.0,
+            costPerHour: 89.45
+          };
+        case 'day':
+          return {
+            ...baseData,
+            totalPower: 1180.0,
+            peakPower: 1450.0,
+            costPerHour: 85.20
+          };
+        case 'week':
+          return {
+            ...baseData,
+            totalPower: 1120.0,
+            peakPower: 1380.0,
+            costPerHour: 82.15
+          };
+        case 'month':
+          return {
+            ...baseData,
+            totalPower: 1080.0,
+            peakPower: 1320.0,
+            costPerHour: 79.80
+          };
+        default:
+          return baseData;
+      }
+    };
+
+    setCurrentData(getDataForRange(timeRange));
+  }, [timeRange]);
+
+  // Update data every 5 seconds to simulate real-time (only when live data is enabled)
+  useEffect(() => {
+    if (!isLiveData) return;
+
+    const interval = setInterval(() => {
+      setCurrentData(prev => ({
+        ...prev,
+        totalPower: prev.totalPower + (Math.random() - 0.5) * 20,
+        powerFactor: Math.max(0.85, Math.min(0.98, prev.powerFactor + (Math.random() - 0.5) * 0.02)),
+        carbonFootprint: prev.carbonFootprint + (Math.random() - 0.5) * 5,
+        costPerHour: prev.costPerHour + (Math.random() - 0.5) * 2
+      }));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isLiveData]);
+
+  const handleExport = () => {
+    console.log('Exporting energy monitoring report...');
+    // Implement export functionality
+    alert('Energy monitoring report exported successfully!');
+  };
+
+  const handlePrint = () => {
+    console.log('Printing energy monitoring report...');
+    window.print();
+  };
+
+  const handleRefresh = () => {
+    console.log('Refreshing energy monitoring data...');
+    // Implement refresh functionality
+    window.location.reload();
+  };
+
+  // Toggle Switch Component
+  const ToggleSwitch = ({ 
+    isOn, 
+    onToggle, 
+    label 
+  }: { 
+    isOn: boolean; 
+    onToggle: () => void; 
+    label: string; 
+  }) => (
+    <div className="flex items-center space-x-3">
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <button
+        onClick={onToggle}
+        className={`
+          relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+          ${isOn ? 'bg-indigo-600' : 'bg-gray-200'}
+        `}
+        role="switch"
+        aria-checked={isOn}
+      >
+        <span
+          className={`
+            inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+            ${isOn ? 'translate-x-6' : 'translate-x-1'}
+          `}
+        />
           </button>
-          <select className="border border-gray-300 rounded-md px-3 py-2">
-            <option value="day">Today</option>
-            <option value="week">This Week</option>
-            <option value="month" selected>This Month</option>
-            <option value="quarter">This Quarter</option>
-            <option value="year">This Year</option>
+      <span className={`text-xs font-medium ${isOn ? 'text-indigo-600' : 'text-gray-500'}`}>
+        {isOn ? 'Live' : 'Static'}
+      </span>
+        </div>
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Energy Monitoring</h1>
+          <p className="text-gray-600 mt-1">Real-time energy consumption and efficiency tracking</p>
+      </div>
+        <div className="flex gap-4 items-center">
+          <select 
+            value={timeRange} 
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 bg-white"
+          >
+            <option value="hour">Last Hour</option>
+            <option value="day">Last 24 Hours</option>
+            <option value="week">Last Week</option>
+            <option value="month">Last Month</option>
           </select>
+          
+          {/* Live Data Toggle */}
+          <ToggleSwitch
+            isOn={isLiveData}
+            onToggle={() => setIsLiveData(!isLiveData)}
+            label="Data Mode:"
+          />
+          
+          {/* Quick Actions */}
+          <QuickActions
+            actions={[
+              commonActions.export(handleExport),
+              commonActions.print(handlePrint),
+              commonActions.refresh(handleRefresh)
+            ]}
+            compact={false}
+            showLabels={true}
+          />
+          </div>
         </div>
+
+      {/* Live Data Indicator */}
+      {isLiveData && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center">
+          <div className="flex-shrink-0">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-green-800">
+              Live Data Active
+            </p>
+            <p className="text-sm text-green-700">
+              Data is updating every 5 seconds. Toggle off to view static data.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Energy Meters */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <EnergyMeter 
+          title="Total Power" 
+          value={currentData.totalPower} 
+          maxValue={2000} 
+          unit="kW" 
+          color="blue"
+          size="medium"
+          showTrend={true}
+          trendValue={2.3}
+          additionalInfo={{
+            subtitle: "Power Details",
+            details: [
+              { label: "Avg", value: "1,180 kW", color: "text-blue-600" },
+              { label: "Min", value: "850 kW", color: "text-green-600" },
+              { label: "Max", value: "1,560 kW", color: "text-red-600" }
+            ],
+            status: {
+              type: 'good',
+              message: 'Normal operation'
+            }
+          }}
+        />
+        <EnergyMeter 
+          title="Peak Power" 
+          value={currentData.peakPower} 
+          maxValue={2000} 
+          unit="kW" 
+          color="yellow"
+          size="medium"
+          additionalInfo={{
+            subtitle: "Peak Analysis",
+            details: [
+              { label: "Peak Time", value: "14:30", color: "text-yellow-600" },
+              { label: "Duration", value: "45 min", color: "text-blue-600" },
+              { label: "Frequency", value: "2/day", color: "text-gray-600" }
+            ],
+            status: {
+              type: 'warning',
+              message: 'Peak approaching limit'
+            }
+          }}
+        />
+        <EnergyMeter 
+          title="Power Factor" 
+          value={currentData.powerFactor * 100} 
+          maxValue={100} 
+          unit="%" 
+          color="green"
+          size="medium"
+          additionalInfo={{
+            subtitle: "Efficiency Metrics",
+            details: [
+              { label: "Target", value: "95%", color: "text-gray-600" },
+              { label: "Reactive", value: "8%", color: "text-orange-600" },
+              { label: "Losses", value: "3.2%", color: "text-red-600" }
+            ],
+            status: {
+              type: 'good',
+              message: 'Excellent efficiency'
+            }
+          }}
+        />
+        <EnergyMeter 
+          title="Carbon Footprint" 
+          value={currentData.carbonFootprint} 
+          maxValue={1000} 
+          unit="kg CO2" 
+          color="red"
+          size="medium"
+          additionalInfo={{
+            subtitle: "Environmental Impact",
+            details: [
+              { label: "Daily", value: "10.9 MT", color: "text-red-600" },
+              { label: "Monthly", value: "328 MT", color: "text-orange-600" },
+              { label: "Target", value: "300 MT", color: "text-green-600" }
+            ],
+            status: {
+              type: 'warning',
+              message: 'Above monthly target'
+            }
+          }}
+        />
+        <DigitalMeter 
+          title="Cost/Hour" 
+          value={currentData.costPerHour} 
+          unit="$" 
+          trend={-1.2}
+          precision={2}
+          additionalInfo={{
+            subtitle: "Cost Analysis",
+            details: [
+              { label: "Peak Rate", value: "$0.12/kWh", color: "text-red-600" },
+              { label: "Off-Peak", value: "$0.08/kWh", color: "text-green-600" },
+              { label: "Daily Total", value: "$2,145.60", color: "text-blue-600" },
+              { label: "Monthly Proj.", value: "$64,368.00", color: "text-gray-700" },
+              { label: "Budget vs Actual", value: "-$1,632", color: "text-green-600" },
+              { label: "Savings Potential", value: "$2,400/mo", color: "text-blue-600" }
+            ],
+            status: {
+              type: 'good',
+              message: '15% below budget - excellent cost control'
+            }
+          }}
+        />
+        <DigitalMeter 
+          title="Efficiency Score" 
+          value={87.3} 
+          unit="%" 
+          trend={1.5}
+          precision={1}
+          additionalInfo={{
+            subtitle: "Performance Analysis",
+            details: [
+              { label: "Power Factor", value: "0.92", color: "text-green-600" },
+              { label: "Load Factor", value: "78.5%", color: "text-blue-600" },
+              { label: "Target", value: "90.0%", color: "text-gray-600" },
+              { label: "Gap", value: "2.7%", color: "text-yellow-600" },
+              { label: "Improvement", value: "+1.5%", color: "text-green-600" },
+              { label: "Next Milestone", value: "89.0%", color: "text-purple-600" }
+            ],
+            status: {
+              type: 'warning',
+              message: '2.7% below target - load shifting recommended'
+            }
+          }}
+        />
       </div>
 
-      {/* Energy Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">Total Energy Consumption</h2>
-          <p className="text-3xl font-bold">245,678 kWh</p>
-          <div className="flex items-center mt-2">
-            <span className="text-green-600 text-sm font-medium">↓ 3.2% vs. last period</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">Energy Performance Index</h2>
-          <p className="text-3xl font-bold">92%</p>
-          <div className="flex items-center mt-2">
-            <span className="text-green-600 text-sm font-medium">↑ 1.5% vs. last period</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">Active Alerts</h2>
-          <p className="text-3xl font-bold">1</p>
-          <div className="flex items-center mt-2">
-            <span className="text-amber-600 text-sm font-medium">Compressor efficiency drift</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">Cost Savings</h2>
-          <p className="text-3xl font-bold">$12,450</p>
-          <div className="flex items-center mt-2">
-            <span className="text-green-600 text-sm font-medium">↑ 5.8% vs. last period</span>
-          </div>
-        </div>
+      {/* Main Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Energy Consumption Trend */}
+        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">
+            Energy Consumption Trend - {timeRange === 'hour' ? 'Last Hour' : 
+              timeRange === 'day' ? 'Last 24 Hours' : 
+              timeRange === 'week' ? 'Last Week' : 'Last Month'}
+            {isLiveData && <span className="ml-2 text-sm text-green-600 font-normal">(Live)</span>}
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={consumptionData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis />
+              <Tooltip 
+                formatter={(value: any, name: string) => [
+                  name === 'power' ? `${value} kW` : `$${value}`,
+                  name === 'power' ? 'Power' : 'Cost'
+                ]}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="power" 
+                stroke="#3b82f6" 
+                fill="#3b82f6" 
+                fillOpacity={0.3} 
+                name="Power"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
       </div>
 
-      {/* Energy Consumption Chart */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Energy Consumption Trend</h2>
-        <div className="h-80 w-full">
-          {/* This would be a real chart in a production app */}
-          <div className="h-full w-full bg-gray-50 flex items-center justify-center">
-            <div className="w-full px-4">
-              <div className="relative h-60">
-                {/* Mock chart bars */}
-                <div className="absolute bottom-0 left-[5%] w-[3%] h-[65%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[10%] w-[3%] h-[70%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[15%] w-[3%] h-[60%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[20%] w-[3%] h-[75%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[25%] w-[3%] h-[80%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[30%] w-[3%] h-[65%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[35%] w-[3%] h-[55%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[40%] w-[3%] h-[70%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[45%] w-[3%] h-[75%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[50%] w-[3%] h-[60%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[55%] w-[3%] h-[65%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[60%] w-[3%] h-[70%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[65%] w-[3%] h-[55%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[70%] w-[3%] h-[50%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[75%] w-[3%] h-[60%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[80%] w-[3%] h-[65%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[85%] w-[3%] h-[55%] bg-indigo-500 rounded-t"></div>
-                <div className="absolute bottom-0 left-[90%] w-[3%] h-[60%] bg-indigo-500 rounded-t"></div>
-                
-                {/* Threshold line */}
-                <div className="absolute bottom-[70%] left-0 w-full h-[1px] bg-red-500 border-dashed"></div>
-                <div className="absolute bottom-[70%] left-[95%] bg-white px-1 text-xs text-red-500">Threshold</div>
-                
-                {/* X-axis labels */}
-                <div className="absolute bottom-[-20px] left-[5%] text-xs text-gray-500">1</div>
-                <div className="absolute bottom-[-20px] left-[25%] text-xs text-gray-500">8</div>
-                <div className="absolute bottom-[-20px] left-[45%] text-xs text-gray-500">15</div>
-                <div className="absolute bottom-[-20px] left-[65%] text-xs text-gray-500">22</div>
-                <div className="absolute bottom-[-20px] left-[85%] text-xs text-gray-500">29</div>
-                
-                {/* Y-axis labels */}
-                <div className="absolute bottom-0 left-[-30px] text-xs text-gray-500">0 kWh</div>
-                <div className="absolute bottom-[25%] left-[-30px] text-xs text-gray-500">5,000 kWh</div>
-                <div className="absolute bottom-[50%] left-[-30px] text-xs text-gray-500">10,000 kWh</div>
-                <div className="absolute bottom-[75%] left-[-30px] text-xs text-gray-500">15,000 kWh</div>
-              </div>
-              <div className="text-center mt-6 text-sm text-gray-500">Days of the Month</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Energy Distribution */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Energy Distribution by Source</h2>
-          <div className="h-64 w-full">
-            {/* This would be a real pie chart in a production app */}
-            <div className="h-full w-full bg-gray-50 flex items-center justify-center">
-              <div className="relative h-48 w-48 rounded-full overflow-hidden">
-                <div className="absolute inset-0 border-8 border-indigo-500" style={{ clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%)' }}></div>
-                <div className="absolute inset-0 border-8 border-blue-400" style={{ clipPath: 'polygon(50% 50%, 100% 0%, 100% 100%, 0% 100%, 0% 0%)' }}></div>
-                <div className="absolute inset-0 border-8 border-green-400" style={{ clipPath: 'polygon(50% 50%, 0% 100%, 100% 100%)' }}></div>
+          <h2 className="text-xl font-semibold mb-4">Energy Distribution</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={distributionData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {distributionData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: any) => [`${value}%`, 'Share']} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            {distributionData.map((item, index) => (
+              <div key={index} className="flex items-center">
+                <div 
+                  className="w-3 h-3 rounded-full mr-2" 
+                  style={{ backgroundColor: item.color }}
+                ></div>
+                <span className="text-sm text-gray-600">{item.name}</span>
               </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-indigo-500 mr-2"></div>
-              <span className="text-sm">Machines (45%)</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-blue-400 mr-2"></div>
-              <span className="text-sm">HVAC (35%)</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-green-400 mr-2"></div>
-              <span className="text-sm">Lighting (20%)</span>
+            ))}
             </div>
           </div>
         </div>
 
-        {/* Energy Efficiency */}
+      {/* Equipment Monitoring */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Equipment Efficiency</h2>
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">Compressor A</span>
-                <span className="text-sm font-medium text-amber-600">78%</span>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Equipment Status & Efficiency</h2>
+          <select 
+            value={selectedEquipment} 
+            onChange={(e) => setSelectedEquipment(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 bg-white"
+          >
+            <option value="all">All Equipment</option>
+            <option value="production">Production Lines</option>
+            <option value="hvac">HVAC Systems</option>
+            <option value="compressors">Compressors</option>
+          </select>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-amber-500 h-2 rounded-full" style={{ width: '78%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">Boiler System</span>
-                <span className="text-sm font-medium text-green-600">92%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">Production Line A</span>
-                <span className="text-sm font-medium text-green-600">85%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">Production Line B</span>
-                <span className="text-sm font-medium text-green-600">88%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '88%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">Chiller System</span>
-                <span className="text-sm font-medium text-red-600">65%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: '65%' }}></div>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {equipmentData.map((equipment, index) => (
+            <EquipmentStatus
+              key={index}
+              name={equipment.name}
+              status={equipment.status}
+              efficiency={equipment.efficiency}
+              power={equipment.power}
+              temperature={equipment.temperature}
+            />
+          ))}
         </div>
       </div>
 
       {/* Alerts and Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Active Alerts</h2>
           <div className="space-y-4">
-            <div className="border-l-4 border-amber-500 pl-4 py-2">
+            <div className="border-l-4 border-yellow-500 pl-4 py-2">
               <div className="flex justify-between">
-                <h3 className="font-medium">Compressor Efficiency Drift</h3>
-                <span className="text-amber-600 text-sm">Warning</span>
+                <h3 className="font-medium">Production Line B Efficiency Drop</h3>
+                <span className="text-yellow-600 text-sm">Warning</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                Compressor A efficiency has dropped by 7% in the last week. Maintenance check recommended.
+                Efficiency dropped to 72% (below 75% threshold). Temperature rising.
               </p>
               <div className="mt-2">
                 <button className="text-sm text-indigo-600 hover:text-indigo-800">
                   Schedule Maintenance
                 </button>
               </div>
+            </div>
+            <div className="border-l-4 border-blue-500 pl-4 py-2">
+              <div className="flex justify-between">
+                <h3 className="font-medium">Chiller System Maintenance</h3>
+                <span className="text-blue-600 text-sm">Maintenance</span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                Scheduled maintenance in progress. System operating at reduced capacity.
+              </p>
             </div>
           </div>
         </div>
@@ -214,20 +535,31 @@ export default function EnergyMonitoringPage() {
           <h2 className="text-xl font-semibold mb-4">Optimization Recommendations</h2>
           <div className="space-y-4">
             <div className="border-l-4 border-green-500 pl-4 py-2">
-              <h3 className="font-medium">Chiller System Upgrade</h3>
+              <h3 className="font-medium">Peak Load Shifting</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Upgrading the chiller system could improve efficiency by up to 20% and save approximately $8,500 annually.
+                Shift 15% of production load to off-peak hours to save $2,400/month.
               </p>
               <div className="mt-2">
                 <button className="text-sm text-indigo-600 hover:text-indigo-800">
-                  View Details
+                  View Schedule
                 </button>
               </div>
             </div>
             <div className="border-l-4 border-green-500 pl-4 py-2">
-              <h3 className="font-medium">Production Schedule Optimization</h3>
+              <h3 className="font-medium">Chiller System Upgrade</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Shifting high-energy operations to off-peak hours could reduce energy costs by 15%.
+                Upgrade could improve efficiency by 20% and save $8,500 annually.
+              </p>
+              <div className="mt-2">
+                <button className="text-sm text-indigo-600 hover:text-indigo-800">
+                  View Proposal
+                </button>
+              </div>
+            </div>
+            <div className="border-l-4 border-green-500 pl-4 py-2">
+              <h3 className="font-medium">Smart Lighting Implementation</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Motion sensors and LED upgrades could reduce lighting costs by 30%.
               </p>
               <div className="mt-2">
                 <button className="text-sm text-indigo-600 hover:text-indigo-800">
@@ -235,6 +567,33 @@ export default function EnergyMonitoringPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Environmental Impact */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Environmental Impact</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">{currentData.carbonFootprint.toFixed(1)}</div>
+            <div className="text-sm text-gray-600">kg CO2/hr</div>
+            <div className="text-xs text-gray-500 mt-1">Carbon Footprint</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600">87.3%</div>
+            <div className="text-sm text-gray-600">Efficiency</div>
+            <div className="text-xs text-gray-500 mt-1">Overall System</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600">$12,450</div>
+            <div className="text-sm text-gray-600">Saved This Month</div>
+            <div className="text-xs text-gray-500 mt-1">vs. Last Month</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">15.2%</div>
+            <div className="text-sm text-gray-600">Renewable Energy</div>
+            <div className="text-xs text-gray-500 mt-1">Usage</div>
           </div>
         </div>
       </div>

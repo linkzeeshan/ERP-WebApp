@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { handleLogout } from "./actions";
+import TopNav from "../components/TopNav/TopNav";
 
 // This is a protected layout that will be applied to all routes except login
 export default function ProtectedLayout({
@@ -9,13 +10,14 @@ export default function ProtectedLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   // In a real app, we would check for authentication here
   // For now, we'll just assume the user is authenticated
   
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white">
+      <aside className="w-64 bg-gray-900 text-white flex-shrink-0">
         <div className="p-4 flex items-center">
           <div className="h-10 w-10 bg-indigo-600 rounded-full flex items-center justify-center mr-3">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -23,7 +25,7 @@ export default function ProtectedLayout({
             </svg>
           </div>
           <Link href="/dashboard" className="font-bold text-xl">
-            ERP System
+            Sunflag ERP
           </Link>
         </div>
         <nav className="mt-6">
@@ -83,6 +85,24 @@ export default function ProtectedLayout({
               Decision Support
             </Link>
             <Link
+              href="/analysis"
+              className="flex items-center py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors mt-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Business Intelligence
+            </Link>
+            <Link
+              href="/real-analysis"
+              className="flex items-center py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors mt-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Data Analytics
+            </Link>
+            <Link
               href="/reports"
               className="flex items-center py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors mt-2"
             >
@@ -93,42 +113,16 @@ export default function ProtectedLayout({
             </Link>
           </div>
         </nav>
-        <div className="absolute bottom-0 w-64 p-4">
-          <form action={handleLogout}>
-            <button
-              type="submit"
-              className="w-full flex items-center py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
-          </form>
-        </div>
+        
       </aside>
 
       {/* Main content */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top header */}
-        <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
-          </div>
-          <div className="flex items-center">
-            <button className="p-2 rounded-full hover:bg-gray-100 mr-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            <div className="h-10 w-10 rounded-full bg-gray-300 overflow-hidden">
-              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User profile" className="h-full w-full object-cover" />
-            </div>
-          </div>
-        </header>
+        <TopNav />
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>
       </div>

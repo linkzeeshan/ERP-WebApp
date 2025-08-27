@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import CompanyInfo from '../CompanyInfo';
 
 interface NavItem {
   name: string;
@@ -82,7 +83,7 @@ export default function SideNav() {
     <div className={`bg-white border-r border-gray-200 h-screen transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          {!isCollapsed && <span className="text-lg font-semibold text-gray-800">ERP System</span>}
+          {!isCollapsed && <span className="text-lg font-semibold text-gray-800">Sunflag ERP</span>}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1 rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -124,34 +125,7 @@ export default function SideNav() {
         </nav>
         <div className="p-4 border-t border-gray-200">
           {!isCollapsed && (
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold">
-                  U
-                </div>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700">User Name</p>
-                <Link
-                  href="/login"
-                  className="text-xs font-medium text-gray-500 hover:text-gray-700"
-                >
-                  Logout
-                </Link>
-              </div>
-            </div>
-          )}
-          {isCollapsed && (
-            <div className="flex justify-center">
-              <Link
-                href="/login"
-                className="p-2 text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </Link>
-            </div>
+            <CompanyInfo variant="compact" />
           )}
         </div>
       </div>

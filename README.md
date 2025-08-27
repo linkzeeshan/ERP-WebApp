@@ -1,3 +1,18 @@
+# Sunflag Thailand ERP System
+
+This is a comprehensive Enterprise Resource Planning (ERP) system developed for Sunflag Thailand Ltd., a leading polyester yarn manufacturing company established in 1989.
+
+## About Sunflag Thailand
+
+Sunflag Thailand Ltd. is located at Rojana Industrial Park in Ayuthaya, Thailand, with a production capacity of 100,000 tonnes per annum. The company specializes in:
+
+- Polyester Staple Fiber (36,000 tons per annum)
+- Partially Oriented POY (55,000 tons per annum)
+- Draw Textured Polyester Yarn (45,000 tons per annum)
+- Fully Drawn Polyester Yarn (6,000 tons per annum)
+
+**Company Motto:** "Quality is our priority"
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
