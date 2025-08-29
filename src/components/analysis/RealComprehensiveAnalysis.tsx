@@ -22,8 +22,7 @@ import AnomalyDetection from '../ui/AnomalyDetection';
 import RecommendationEngine from '../ui/RecommendationEngine';
 import CustomerSegmentation from '../ui/CustomerSegmentation';
 import PriceOptimization from '../ui/PriceOptimization';
-import { loadExcelData } from '../../services/excelDataLoader';
-import { performCompleteAnalysis } from '../../services/excelAnalysisService';
+import { fetchServerAnalytics, ServerAnalyticsResponse } from '../../services/serverAnalyticsService';
 
 interface RealComprehensiveAnalysisProps {
   initialTab?: string;
@@ -32,7 +31,7 @@ interface RealComprehensiveAnalysisProps {
 export default function RealComprehensiveAnalysis({ initialTab = 'orders' }: RealComprehensiveAnalysisProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
-  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [analysisData, setAnalysisData] = useState<ServerAnalyticsResponse | null>(null);
   
   // Pagination state for Sales Recommendations
   const [salesCurrentPage, setSalesCurrentPage] = useState(1);
@@ -887,9 +886,8 @@ export default function RealComprehensiveAnalysis({ initialTab = 'orders' }: Rea
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await loadExcelData();
-      const analysis = performCompleteAnalysis(data);
-      setAnalysisData(analysis);
+      const data = await fetchServerAnalytics();
+      setAnalysisData(data);
     } catch (error) {
       console.error('Error loading comprehensive analysis:', error);
     } finally {
@@ -927,7 +925,7 @@ export default function RealComprehensiveAnalysis({ initialTab = 'orders' }: Rea
           <div>
             <h1 className="text-3xl font-bold mb-2">Data Analytics Dashboard</h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Comprehensive analysis of existing data from legacy system
+            Real-time analytics and insights from live ERP data
             </p>
           </div>
           
@@ -1253,20 +1251,20 @@ export default function RealComprehensiveAnalysis({ initialTab = 'orders' }: Rea
                                        />
                                      </td>
                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                       <StatusBadge
-                                         status={gap.priority === 'high' ? 'error' : gap.priority === 'medium' ? 'warning' : 'success'}
-                                         label={gap.priority.charAt(0).toUpperCase() + gap.priority.slice(1)}
-                                         size="sm"
-                                         showIcon={false}
-                                       />
+                                                                               <StatusBadge
+                                          status={gap.priority === 'high' ? 'error' : gap.priority === 'medium' ? 'warning' : 'success'}
+                                          label={gap.priority ? gap.priority.charAt(0).toUpperCase() + gap.priority.slice(1) : 'Unknown'}
+                                          size="sm"
+                                          showIcon={false}
+                                        />
                                      </td>
                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                       <StatusBadge
-                                         status={gap.urgency === 'high' ? 'error' : gap.urgency === 'medium' ? 'warning' : 'info'}
-                                         label={gap.urgency.charAt(0).toUpperCase() + gap.urgency.slice(1)}
-                                         size="sm"
-                                         showIcon={false}
-                                       />
+                                                                               <StatusBadge
+                                          status={gap.urgency === 'high' ? 'error' : gap.urgency === 'medium' ? 'warning' : 'info'}
+                                          label={gap.urgency ? gap.urgency.charAt(0).toUpperCase() + gap.urgency.slice(1) : 'Unknown'}
+                                          size="sm"
+                                          showIcon={false}
+                                        />
                                      </td>
                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                        <div className="flex space-x-1">
@@ -1325,11 +1323,11 @@ export default function RealComprehensiveAnalysis({ initialTab = 'orders' }: Rea
                            </div>
                            <div className="bg-red-50 p-4 rounded-lg">
                              <h3 className="text-sm font-medium text-red-600">Liquidation Needed</h3>
-                             <p className="text-2xl font-bold text-red-900">{analysisData.salesRecommendations.liquidationNeeded}</p>
+                                                           <p className="text-2xl font-bold text-red-900">{analysisData.salesRecommendations.totalLiquidationNeeded}</p>
                            </div>
                            <div className="bg-green-50 p-4 rounded-lg">
                              <h3 className="text-sm font-medium text-green-600">Sales Opportunities</h3>
-                             <p className="text-2xl font-bold text-green-900">{analysisData.salesRecommendations.salesOpportunities.length}</p>
+                                                           <p className="text-2xl font-bold text-green-900">{analysisData.salesRecommendations.recommendations.length}</p>
                            </div>
                            <div className="bg-purple-50 p-4 rounded-lg">
                              <h3 className="text-sm font-medium text-purple-600">Recommendations</h3>
@@ -1420,22 +1418,22 @@ export default function RealComprehensiveAnalysis({ initialTab = 'orders' }: Rea
                                       {rec.recommendedAction}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        rec.urgency === 'high' ? 'bg-red-100 text-red-800' :
-                                        rec.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-green-100 text-green-800'
-                                      }`}>
-                                        {rec.urgency.charAt(0).toUpperCase() + rec.urgency.slice(1)}
-                                      </span>
+                                                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                         rec.urgency === 'high' ? 'bg-red-100 text-red-800' :
+                                         rec.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                         'bg-green-100 text-green-800'
+                                       }`}>
+                                         {rec.urgency ? rec.urgency.charAt(0).toUpperCase() + rec.urgency.slice(1) : 'Unknown'}
+                                       </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        rec.priceRecommendation === 'increase' ? 'bg-green-100 text-green-800' :
-                                        rec.priceRecommendation === 'decrease' ? 'bg-red-100 text-red-800' :
-                                        'bg-yellow-100 text-yellow-800'
-                                      }`}>
-                                        {rec.priceRecommendation.charAt(0).toUpperCase() + rec.priceRecommendation.slice(1)}
-                                      </span>
+                                                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                         rec.priceRecommendation === 'increase' ? 'bg-green-100 text-green-800' :
+                                         rec.priceRecommendation === 'decrease' ? 'bg-red-100 text-red-800' :
+                                         'bg-yellow-100 text-yellow-800'
+                                       }`}>
+                                         {rec.priceRecommendation ? rec.priceRecommendation.charAt(0).toUpperCase() + rec.priceRecommendation.slice(1) : 'Unknown'}
+                                       </span>
                                     </td>
                                   </tr>
                                 ))}

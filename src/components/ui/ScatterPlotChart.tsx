@@ -42,7 +42,14 @@ export default function ScatterPlotChart({
   yAxisLabel = 'Supply',
   showTrendLine = true,
   showCategories = false,
-  formatValue = (value: number) => value.toLocaleString()
+  formatValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    }
+    return value.toLocaleString();
+  }
 }: ScatterPlotChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -180,27 +187,41 @@ export default function ScatterPlotChart({
             dataKey="demand" 
             name={xAxisLabel}
             tickFormatter={formatValue}
-            label={{ value: xAxisLabel, position: 'insideBottom', offset: -10 }}
+            label={{ value: xAxisLabel, position: 'insideBottom', offset: -15 }}
+            tick={{ fontSize: 11 }}
+            minTickGap={20}
+            interval="preserveStartEnd"
           />
           <YAxis 
             type="number" 
             dataKey="supply" 
             name={yAxisLabel}
             tickFormatter={formatValue}
-            label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }}
+            label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: -10 }}
+            tick={{ fontSize: 11 }}
+            minTickGap={20}
+            interval="preserveStartEnd"
           />
           <ZAxis type="number" range={[60, 400]} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend />
+                     <Legend 
+             wrapperStyle={{ 
+               paddingTop: '10px',
+               display: 'flex',
+               justifyContent: 'center',
+               flexWrap: 'wrap',
+               gap: '20px'
+             }}
+           />
           
-          {/* Main scatter plot */}
-          <Scatter name="Data Points" data={filteredData} fill="#8884d8">
-            {filteredData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getPointColor(entry)} />
-            ))}
-          </Scatter>
+                     {/* Main scatter plot */}
+           <Scatter name="Data Points" data={filteredData} fill="#8884d8">
+             {filteredData.map((entry, index) => (
+               <Cell key={`cell-${index}`} fill={getPointColor(entry)} />
+             ))}
+           </Scatter>
 
-          {/* Trend line */}
+           {/* Trend line */}
           {trendLineData && (
             <Scatter 
               name="Trend Line" 

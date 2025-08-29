@@ -5,8 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, ComposedChart, Area
 } from 'recharts';
-import { ProductionNeed, PRODUCTS } from '../../services/analysisService';
-import { loadDemoData, getCurrentMonth } from '../../services/dataLoader';
+import { fetchServerAnalytics, ProductionNeedsAnalytics } from '../../services/serverAnalyticsService';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 const PRIORITY_COLORS = {
@@ -16,27 +15,20 @@ const PRIORITY_COLORS = {
 };
 
 export default function ProductionNeedsAnalysis() {
-  const [productionNeeds, setProductionNeeds] = useState<ProductionNeed[]>([]);
-  const [currentMonth, setCurrentMonth] = useState<string>('2024-03');
+  const [productionNeeds, setProductionNeeds] = useState<ProductionNeedsAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
   useEffect(() => {
     loadData();
-  }, [currentMonth]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await loadDemoData();
-      const month = getCurrentMonth(data.marketDemand);
-      setCurrentMonth(month);
-      
-      // Import the analysis function
-      const { calculateProductionNeeds } = await import('../../services/analysisService');
-      const needs = calculateProductionNeeds(data.marketDemand, data.inventoryFlows, month);
-      setProductionNeeds(needs);
+      const data = await fetchServerAnalytics();
+      setProductionNeeds(data.productionNeeds);
     } catch (error) {
       console.error('Error loading production needs analysis:', error);
     } finally {
@@ -44,21 +36,37 @@ export default function ProductionNeedsAnalysis() {
     }
   };
 
-  const filteredNeeds = productionNeeds.filter(item => {
-    const matchesProduct = selectedProduct === 'all' || item.productId === selectedProduct;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!productionNeeds) {
+    return (
+      <div className="text-center text-red-600">
+        Failed to load production needs data
+      </div>
+    );
+  }
+
+  const filteredNeeds = (productionNeeds.productionGaps || []).filter(item => {
+    const matchesProduct = selectedProduct === 'all' || item.product.includes(selectedProduct);
     const matchesPriority = priorityFilter === 'all' || item.priority === priorityFilter;
     return matchesProduct && matchesPriority;
   });
 
-  const totalProductionNeeded = productionNeeds.reduce((sum, p) => sum + p.productionNeeded, 0);
-  const highPriorityNeeds = productionNeeds.filter(p => p.priority === 'high');
-  const mediumPriorityNeeds = productionNeeds.filter(p => p.priority === 'medium');
-  const lowPriorityNeeds = productionNeeds.filter(p => p.priority === 'low');
-  const avgGapPercentage = productionNeeds.reduce((sum, p) => sum + p.gapPercentage, 0) / productionNeeds.length;
+  const totalProductionNeeded = productionNeeds.totalProductionNeeded || 0;
+  const highPriorityNeeds = (productionNeeds.productionGaps || []).filter(p => p.priority === 'high');
+  const mediumPriorityNeeds = (productionNeeds.productionGaps || []).filter(p => p.priority === 'medium');
+  const lowPriorityNeeds = (productionNeeds.productionGaps || []).filter(p => p.priority === 'low');
+  const avgGapPercentage = (productionNeeds.productionGaps || []).reduce((sum, p) => sum + p.gapPercentage, 0) / Math.max((productionNeeds.productionGaps || []).length, 1);
 
   const productionData = filteredNeeds.map(item => ({
-    name: item.productName,
-    'Demand Forecast': item.demandForecast,
+    name: item.product,
+    'Demand Forecast': item.demand,
     'Current Stock': item.currentStock,
     'Production Needed': item.productionNeeded,
     'Gap %': item.gapPercentage
@@ -71,24 +79,16 @@ export default function ProductionNeedsAnalysis() {
   ];
 
   const gapAnalysisData = filteredNeeds.map(item => ({
-    name: item.productName,
+    name: item.product,
     'Gap Percentage': item.gapPercentage,
     'Priority': item.priority
   }));
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-4">Production Needs Analysis - {currentMonth}</h2>
+        <h2 className="text-2xl font-bold mb-4">Production Needs Analysis - Data</h2>
         <p className="text-gray-600 mb-4">
           Analysis of production requirements based on demand forecasts and current inventory levels
         </p>
@@ -125,9 +125,9 @@ export default function ProductionNeedsAnalysis() {
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="all">All Products</option>
-              {PRODUCTS.map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
+              {Array.from(new Set((productionNeeds.productionGaps || []).map(item => item.product))).map(product => (
+                <option key={product} value={product}>
+                  {product}
                 </option>
               ))}
             </select>
@@ -252,12 +252,12 @@ export default function ProductionNeedsAnalysis() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredNeeds.map((item) => (
-                <tr key={item.productId}>
+                <tr key={item.product}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.productName}
+                    {item.product}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.demandForecast.toFixed(1)}
+                    {item.demand.toFixed(1)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.currentStock.toFixed(1)}
@@ -304,7 +304,7 @@ export default function ProductionNeedsAnalysis() {
         <h3 className="text-lg font-semibold mb-4">Production Recommendations</h3>
         <div className="space-y-4">
           {highPriorityNeeds.map(item => (
-            <div key={item.productId} className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div key={item.product} className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -313,10 +313,10 @@ export default function ProductionNeedsAnalysis() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">
-                    High Priority: {item.productName}
+                    High Priority: {item.product}
                   </h3>
                   <div className="mt-2 text-sm text-red-700">
-                    <p>Demand: {item.demandForecast.toFixed(1)} MT | Current Stock: {item.currentStock.toFixed(1)} MT</p>
+                    <p>Demand: {item.demand.toFixed(1)} MT | Current Stock: {item.currentStock.toFixed(1)} MT</p>
                     <p>Production Needed: {item.productionNeeded.toFixed(1)} MT ({item.gapPercentage.toFixed(1)}% gap)</p>
                     <p>Action: Increase production immediately to meet demand</p>
                   </div>
@@ -326,7 +326,7 @@ export default function ProductionNeedsAnalysis() {
           ))}
           
           {mediumPriorityNeeds.map(item => (
-            <div key={item.productId} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div key={item.product} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -335,10 +335,10 @@ export default function ProductionNeedsAnalysis() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-yellow-800">
-                    Medium Priority: {item.productName}
+                    Medium Priority: {item.product}
                   </h3>
                   <div className="mt-2 text-sm text-yellow-700">
-                    <p>Demand: {item.demandForecast.toFixed(1)} MT | Current Stock: {item.currentStock.toFixed(1)} MT</p>
+                    <p>Demand: {item.demand.toFixed(1)} MT | Current Stock: {item.currentStock.toFixed(1)} MT</p>
                     <p>Production Needed: {item.productionNeeded.toFixed(1)} MT ({item.gapPercentage.toFixed(1)}% gap)</p>
                     <p>Action: Plan moderate production increase in next cycle</p>
                   </div>
@@ -357,7 +357,7 @@ export default function ProductionNeedsAnalysis() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-green-800">
-                    Low Priority Items: {lowPriorityNeeds.map(item => item.productName).join(', ')}
+                    Low Priority Items: {lowPriorityNeeds.map(item => item.product).join(', ')}
                   </h3>
                   <div className="mt-2 text-sm text-green-700">
                     <p>These products have adequate stock levels relative to demand</p>

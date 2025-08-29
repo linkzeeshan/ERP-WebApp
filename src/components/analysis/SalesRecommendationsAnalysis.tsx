@@ -5,8 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, ComposedChart, Area
 } from 'recharts';
-import { SalesRecommendation, PRODUCTS } from '../../services/analysisService';
-import { loadDemoData, getCurrentMonth } from '../../services/dataLoader';
+import { fetchServerAnalytics, SalesRecommendationsAnalytics } from '../../services/serverAnalyticsService';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 const URGENCY_COLORS = {
@@ -22,8 +21,7 @@ const PRICE_COLORS = {
 };
 
 export default function SalesRecommendationsAnalysis() {
-  const [salesRecommendations, setSalesRecommendations] = useState<SalesRecommendation[]>([]);
-  const [currentMonth, setCurrentMonth] = useState<string>('2024-03');
+  const [salesRecommendations, setSalesRecommendations] = useState<SalesRecommendationsAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<string>('all');
@@ -34,19 +32,13 @@ export default function SalesRecommendationsAnalysis() {
 
   useEffect(() => {
     loadData();
-  }, [currentMonth]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await loadDemoData();
-      const month = getCurrentMonth(data.marketDemand);
-      setCurrentMonth(month);
-      
-      // Import the analysis function
-      const { generateSalesRecommendations } = await import('../../services/analysisService');
-      const recommendations = generateSalesRecommendations(data.inventoryFlows, data.marketDemand, month);
-      setSalesRecommendations(recommendations);
+      const data = await fetchServerAnalytics();
+      setSalesRecommendations(data.salesRecommendations);
     } catch (error) {
       console.error('Error loading sales recommendations analysis:', error);
     } finally {
@@ -54,7 +46,34 @@ export default function SalesRecommendationsAnalysis() {
     }
   };
 
-  const filteredRecommendations = salesRecommendations.filter(item => {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!salesRecommendations) {
+    return (
+      <div className="text-center text-red-600">
+        Failed to load sales recommendations data
+      </div>
+    );
+  }
+
+  // Convert API data to match the expected format
+  const recommendationsData = (salesRecommendations.recommendations || []).map((rec, index) => ({
+    productId: rec.product,
+    productName: rec.product,
+    currentStock: rec.currentStock,
+    recommendedSales: rec.excessStock,
+    liquidationNeeded: rec.liquidationNeeded,
+    urgency: rec.urgency,
+    priceRecommendation: rec.priceRecommendation
+  }));
+
+  const filteredRecommendations = recommendationsData.filter(item => {
     const matchesProduct = selectedProduct === 'all' || item.productId === selectedProduct;
     const matchesUrgency = urgencyFilter === 'all' || item.urgency === urgencyFilter;
     return matchesProduct && matchesUrgency;
@@ -66,18 +85,16 @@ export default function SalesRecommendationsAnalysis() {
   const endIndex = startIndex + itemsPerPage;
   const currentItems = filteredRecommendations.slice(startIndex, endIndex);
 
-
-
   // Handle page changes for Detailed Sales Recommendations
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  const totalLiquidationNeeded = salesRecommendations.reduce((sum, s) => sum + s.liquidationNeeded, 0);
-  const totalRecommendedSales = salesRecommendations.reduce((sum, s) => sum + s.recommendedSales, 0);
-  const highUrgencyItems = salesRecommendations.filter(s => s.urgency === 'high').length;
-  const priceIncreaseItems = salesRecommendations.filter(s => s.priceRecommendation === 'increase').length;
-  const priceDecreaseItems = salesRecommendations.filter(s => s.priceRecommendation === 'decrease').length;
+  const totalLiquidationNeeded = recommendationsData.reduce((sum, s) => sum + s.liquidationNeeded, 0);
+  const totalRecommendedSales = recommendationsData.reduce((sum, s) => sum + s.recommendedSales, 0);
+  const highUrgencyItems = recommendationsData.filter(s => s.urgency === 'high').length;
+  const priceIncreaseItems = recommendationsData.filter(s => s.priceRecommendation === 'increase').length;
+  const priceDecreaseItems = recommendationsData.filter(s => s.priceRecommendation === 'decrease').length;
 
   const salesData = filteredRecommendations.map(item => ({
     name: item.productName,
@@ -88,13 +105,13 @@ export default function SalesRecommendationsAnalysis() {
 
   const urgencyData = [
     { name: 'High Urgency', value: highUrgencyItems, color: URGENCY_COLORS.high },
-    { name: 'Medium Urgency', value: salesRecommendations.filter(s => s.urgency === 'medium').length, color: URGENCY_COLORS.medium },
-    { name: 'Low Urgency', value: salesRecommendations.filter(s => s.urgency === 'low').length, color: URGENCY_COLORS.low }
+    { name: 'Medium Urgency', value: recommendationsData.filter(s => s.urgency === 'medium').length, color: URGENCY_COLORS.medium },
+    { name: 'Low Urgency', value: recommendationsData.filter(s => s.urgency === 'low').length, color: URGENCY_COLORS.low }
   ];
 
   const priceRecommendationData = [
     { name: 'Increase Price', value: priceIncreaseItems, color: PRICE_COLORS.increase },
-    { name: 'Maintain Price', value: salesRecommendations.filter(s => s.priceRecommendation === 'maintain').length, color: PRICE_COLORS.maintain },
+    { name: 'Maintain Price', value: recommendationsData.filter(s => s.priceRecommendation === 'maintain').length, color: PRICE_COLORS.maintain },
     { name: 'Decrease Price', value: priceDecreaseItems, color: PRICE_COLORS.decrease }
   ];
 
@@ -104,19 +121,11 @@ export default function SalesRecommendationsAnalysis() {
     'Urgency': item.urgency
   }));
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-4">Sales Recommendations Analysis</h2>
+        <h2 className="text-2xl font-bold mb-4">Sales Recommendations Analysis - Data</h2>
         <p className="text-gray-600 mb-4">
           Data-driven recommendations for optimal sales strategies and inventory management
         </p>
@@ -142,7 +151,7 @@ export default function SalesRecommendationsAnalysis() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Filter by Product
@@ -156,9 +165,9 @@ export default function SalesRecommendationsAnalysis() {
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="all">All Products</option>
-              {PRODUCTS.map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
+              {Object.keys(salesRecommendations.recommendations || {}).map(product => (
+                <option key={product} value={product}>
+                  {product}
                 </option>
               ))}
             </select>
@@ -181,23 +190,7 @@ export default function SalesRecommendationsAnalysis() {
               <option value="low">Low Urgency</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current Month
-            </label>
-            <select
-              value={currentMonth}
-              onChange={(e) => setCurrentMonth(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="2024-01">January 2024</option>
-              <option value="2024-02">February 2024</option>
-              <option value="2024-03">March 2024</option>
-              <option value="2024-04">April 2024</option>
-              <option value="2024-05">May 2024</option>
-              <option value="2024-06">June 2024</option>
-            </select>
-          </div>
+
         </div>
       </div>
 
@@ -424,7 +417,7 @@ export default function SalesRecommendationsAnalysis() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Sales Action Items</h3>
         <div className="space-y-4">
-          {salesRecommendations.filter(item => item.urgency === 'high').map(item => (
+                     {recommendationsData.filter(item => item.urgency === 'high').map(item => (
             <div key={item.productId} className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">

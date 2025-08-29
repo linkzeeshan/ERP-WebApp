@@ -5,8 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, ComposedChart, Area
 } from 'recharts';
-import { loadExcelData } from '../../services/excelDataLoader';
-import { analyzeOrders, OrderAnalysis } from '../../services/excelAnalysisService';
+import { fetchServerAnalytics, OrderAnalytics } from '../../services/serverAnalyticsService';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 const ORDER_TYPE_COLORS = {
@@ -15,7 +14,7 @@ const ORDER_TYPE_COLORS = {
 };
 
 export default function RealOrdersAnalysis() {
-  const [orderAnalysis, setOrderAnalysis] = useState<OrderAnalysis | null>(null);
+  const [orderAnalysis, setOrderAnalysis] = useState<OrderAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
@@ -27,9 +26,12 @@ export default function RealOrdersAnalysis() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await loadExcelData();
-      const analysis = analyzeOrders(data);
-      setOrderAnalysis(analysis);
+      const data = await fetchServerAnalytics();
+      console.log('Raw analytics data:', data);
+      console.log('Orders analytics:', data.orders);
+      console.log('Orders by customer:', data.orders.ordersByCustomer);
+      console.log('Recent orders:', data.orders.recentOrders);
+      setOrderAnalysis(data.orders);
     } catch (error) {
       console.error('Error loading orders analysis:', error);
     } finally {
@@ -77,6 +79,10 @@ export default function RealOrdersAnalysis() {
       value: data.value,
       count: data.count
     }));
+
+  // Debug logging
+  console.log('Customer data for chart:', customerData);
+  console.log('Orders by customer raw data:', orderAnalysis.ordersByCustomer);
 
   const countryData = Object.entries(orderAnalysis.ordersByCountry).map(([country, data]) => ({
     name: country,
@@ -161,21 +167,21 @@ export default function RealOrdersAnalysis() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Orders by Product */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Orders by Product</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={productData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip formatter={(value) => `${value.toLocaleString()}`} />
-              <Legend />
-              <Bar dataKey="quantity" fill="#8884d8" name="Quantity (kg)" />
-              <Bar dataKey="value" fill="#82ca9d" name="Value ($)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+                 {/* Orders by Product */}
+         <div className="bg-white rounded-lg shadow p-6">
+           <h3 className="text-lg font-semibold mb-4">Orders by Product</h3>
+           <ResponsiveContainer width="100%" height={300}>
+             <BarChart data={productData}>
+               <CartesianGrid strokeDasharray="3 3" />
+               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={11} />
+               <YAxis fontSize={11} />
+               <Tooltip formatter={(value) => `${value.toLocaleString()}`} />
+               <Legend fontSize={11} />
+               <Bar dataKey="quantity" fill="#8884d8" name="Quantity (kg)" />
+               <Bar dataKey="value" fill="#82ca9d" name="Value ($)" />
+             </BarChart>
+           </ResponsiveContainer>
+         </div>
 
         {/* Order Type Distribution */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -204,36 +210,47 @@ export default function RealOrdersAnalysis() {
 
       {/* More Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Customers */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Top 10 Customers by Value</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={customerData} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={100} />
-              <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-              <Legend />
-              <Bar dataKey="value" fill="#ff7300" name="Order Value ($)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+                 {/* Top Customers */}
+         <div className="bg-white rounded-lg shadow p-6">
+           <h3 className="text-lg font-semibold mb-4">Top 10 Customers by Value</h3>
+          
+                       {customerData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={customerData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={120} fontSize={10} />
+                  <YAxis fontSize={11} />
+                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                  <Legend fontSize={11} />
+                  <Bar dataKey="value" fill="#ff7300" name="Order Value ($)" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+             <div className="flex items-center justify-center h-64 text-gray-500">
+               <div className="text-center">
+                 <p className="text-lg font-medium">No customer data available</p>
+                 <p className="text-sm">The chart will display customer order values when data is loaded.</p>
+                 <p className="text-xs mt-2">Debug: {Object.keys(orderAnalysis.ordersByCustomer).length} customers found</p>
+               </div>
+             </div>
+           )}
+         </div>
 
-        {/* Orders by Country */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Orders by Country</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={countryData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip formatter={(value) => `${value.toLocaleString()}`} />
-              <Legend />
-              <Bar dataKey="quantity" fill="#8884d8" name="Quantity (kg)" />
-              <Area type="monotone" dataKey="value" fill="#82ca9d" stroke="#82ca9d" fillOpacity={0.3} name="Value ($)" />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+                 {/* Orders by Country */}
+         <div className="bg-white rounded-lg shadow p-6">
+           <h3 className="text-lg font-semibold mb-4">Orders by Country</h3>
+           <ResponsiveContainer width="100%" height={300}>
+             <ComposedChart data={countryData}>
+               <CartesianGrid strokeDasharray="3 3" />
+               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={11} />
+               <YAxis fontSize={11} />
+               <Tooltip formatter={(value) => `${value.toLocaleString()}`} />
+               <Legend fontSize={11} />
+               <Bar dataKey="quantity" fill="#8884d8" name="Quantity (kg)" />
+               <Area type="monotone" dataKey="value" fill="#82ca9d" stroke="#82ca9d" fillOpacity={0.3} name="Value ($)" />
+             </ComposedChart>
+           </ResponsiveContainer>
+         </div>
       </div>
 
       {/* Recent Orders Table */}

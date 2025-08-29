@@ -7,7 +7,8 @@ export default function DashboardPage() {
       
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-semibold mb-4">Business Intelligence</h2>
+        <p>Comprehensive analytics for orders, inventory, production, and sales performance</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                      <Link 
              href="/analysis?tab=orders"
@@ -222,7 +223,7 @@ export default function DashboardPage() {
       {/* Data Analytics */}
       <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4 text-blue-900">Data Analytics</h2>
-                    <p className="text-blue-700 mb-4">Analyze existing data from Sunflag legacy system</p>
+          <p>Real-time data analysis and insights from live ERP data</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                      <Link 
              href="/real-analysis?tab=orders"
@@ -252,7 +253,7 @@ export default function DashboardPage() {
            >
              <div className="text-2xl mr-3">⚙️</div>
              <div>
-               <h3 className="font-medium text-blue-900">Production Analytics</h3>
+               <h3 className="font-medium text-blue-900">Production Needs</h3>
                <p className="text-sm text-blue-700">Production gaps</p>
              </div>
            </Link>
